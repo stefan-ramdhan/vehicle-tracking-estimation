@@ -139,19 +139,11 @@ if __name__=="__main__":
 
 '''
 TODO:
-
-Trajectory tracker for CAR_ID (visualize trajectories)
-Write KF for a single variable for a single car.  (everything is scalar)
+Produce measurements (noise to GT)
+Implement KF for position for a single car, WNA model
+Extend KF to vel, accel, yaw, yaw rate estimation
+Implement EKF using CTRV model (turning scenario)
+Implement IMM estimator to esimate both non-linear and linear case (entire trajectory)
 '''
 
-'''
-Calibration looks somewhat okay, but doesn't look accurate when comparing multiple cameras. This is fine, since we're only doing single camera tracking. 
-(calibration from one dataset to another don't necessarily need to agree with each other, because we only care about estimating one vehicle from one sensor)
-
-Worry: Conditino numbers are quite large. Causing magnification of errors.
-'''
-
-'''
-r2_s1: no calibration is needed. They provide x,y,z in real-world coords. Try plotting trajectories for this dataset.
-'''
 

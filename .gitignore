@@ -1,0 +1,5 @@
+#ignore pcd and jpg
+*.jpg
+*.pcd
+
+paper.pdf

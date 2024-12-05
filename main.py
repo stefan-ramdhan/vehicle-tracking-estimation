@@ -1,4 +1,6 @@
 from input import *
+from kalman import *
+from stats import *
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -59,56 +61,97 @@ def main():
     elif DATASET == "r2_s1":
 
         # Select which part of the turning sequence we want
-        scenario = "straight1" # straight1, turning, straight2, all
+        scenario = "all" # straight1, turning, straight2, all
 
         sec1_cutoff = 46 # point at which vehicle goes from straight to turning (46 is good)
-        sec2_cutoff = 85 # vehicle goes from turning to straight
-        
-
-        
-        
+        sec2_cutoff = 85 # vehicle goes from turning to straight        
 
         if scenario == "straight1":
-            x_vals = vals["cuboid_val"].apply(lambda x: x[0]).to_numpy()[:sec1_cutoff]
-            y_vals = vals["cuboid_val"].apply(lambda x: x[1]).to_numpy()[:sec1_cutoff]
-            yaw = vals["cuboid_val"].apply(lambda x: x[5]).to_numpy()[:sec1_cutoff]
             vals = vals.iloc[:sec1_cutoff]
+            vals['x'] = vals["cuboid_val"].apply(lambda x: x[0]).to_numpy()
+            vals['y'] = vals["cuboid_val"].apply(lambda x: x[1]).to_numpy()
+            vals['yaw'] = vals["cuboid_val"].apply(lambda x: x[5]).to_numpy()
         elif scenario == "turning":
-            x_vals = vals["cuboid_val"].apply(lambda x: x[0]).to_numpy()[sec1_cutoff:sec2_cutoff]
-            y_vals = vals["cuboid_val"].apply(lambda x: x[1]).to_numpy()[sec1_cutoff:sec2_cutoff]
-            yaw = vals["cuboid_val"].apply(lambda x: x[5]).to_numpy()[sec1_cutoff:sec2_cutoff]
             vals = vals.iloc[sec1_cutoff:sec2_cutoff]
+            vals['x'] = vals["cuboid_val"].apply(lambda x: x[0]).to_numpy()
+            vals['y'] = vals["cuboid_val"].apply(lambda x: x[1]).to_numpy()
+            vals['yaw'] = vals["cuboid_val"].apply(lambda x: x[5]).to_numpy()
         elif scenario == "straight2":
-            x_vals = vals["cuboid_val"].apply(lambda x: x[0]).to_numpy()[sec2_cutoff:]
-            y_vals = vals["cuboid_val"].apply(lambda x: x[1]).to_numpy()[sec2_cutoff:]
-            yaw = vals["cuboid_val"].apply(lambda x: x[5]).to_numpy()[sec2_cutoff:]
             vals = vals.iloc[sec2_cutoff:]
+            vals['x'] = vals["cuboid_val"].apply(lambda x: x[0]).to_numpy()
+            vals['y'] = vals["cuboid_val"].apply(lambda x: x[1]).to_numpy()
+            vals['yaw'] = vals["cuboid_val"].apply(lambda x: x[5]).to_numpy()
         elif scenario == "all":
-            x_vals = vals["cuboid_val"].apply(lambda x: x[0]).to_numpy()
-            y_vals = vals["cuboid_val"].apply(lambda x: x[1]).to_numpy()
-            yaw = vals["cuboid_val"].apply(lambda x: x[5]).to_numpy()
-
-        # Add position & yaw values to df
-        vals['x'] = x_vals
-        vals['y'] = y_vals
-        vals['yaw'] = yaw
-
-        # Compute ground truth velocity (lat, long)
-        compute_ground_truth(vals)
-        print(vals)
-
-        # Add GT vel to dataframe
-
-        # Compute ground truth accel (lat, long)
-
-        # Compute ground truth yaw, yaw rate
+            vals['x'] = vals["cuboid_val"].apply(lambda x: x[0]).to_numpy()
+            vals['y'] = vals["cuboid_val"].apply(lambda x: x[1]).to_numpy()
+            vals['yaw'] = vals["cuboid_val"].apply(lambda x: x[5]).to_numpy()
+        else:
+            print("Invalid trjaecotry segment")
 
 
-        # plt.plot(x_vals, y_vals)
-        # plt.ylim([-65, 10])
-        # plt.xlim([10, 55])
+        '''
+        vals is given as:
+        0: x
+        1: y
+        2: z
+        3: roll
+        4: pitch
+        5: yaw
+        6: confidence
+        7: length
+        8: width
+        9: height
+        '''
+
+        # Compute ground truth
+        vals = compute_derivatives(vals)
+
+        # Add noise to ground truth, to simulate measurements, and compute measured lat_vel, long_vel, etc.
+        sigma = 0.02
+        noisy_vals = simulate_measurements(vals, sigma)
+
+        # # Plot GT vel, measured vel (lateral)
+        # plt.plot(range(len(vals['lat_accel'])), vals['lat_accel'], label='GT vel') 
+        # plt.plot(range(len(noisy_vals['lat_accel'])), noisy_vals['lat_accel'], label='measured vel') 
+        # plt.legend()
         # plt.show()
 
+        # Call Kalman Filter
+        x_hat = execute_kf(noisy_vals, "my_4d_linear")
+
+        '''Plot ground truth & measurements (trajectory) '''
+        plt.figure(1)
+        # plt.plot(noisy_vals['x'], noisy_vals['y'], label='measured trajectory')
+        plt.scatter(vals['x'], vals['y'], label="ground truth")
+        plt.scatter(x_hat['x'], x_hat['y'], label='estimated trajectory')
+        plt.ylim([-65, 10])
+        plt.xlim([10, 55])
+        plt.legend()
+
+        # mse_x = compute_mse(vals['x'], x_hat['x'])
+        # mse_y = compute_mse(vals['y'], x_hat['y'])
+
+        '''Plot lat_vel long_vel'''
+        fig = plt.figure()
+        plt.subplot(2,1,1)
+        plt.plot(range(len(vals['lat_vel'])), vals['lat_vel'], label='GT lat_vel')
+        plt.plot(range(len(x_hat['lat_vel'])), x_hat['lat_vel'], label='estimated lat_vel')
+        plt.legend()
+        plt.subplot(2,1,2)
+        plt.plot(range(len(vals['long_vel'])), vals['long_vel'], label='GT long_vel')
+        plt.plot(range(len(x_hat['long_vel'])), x_hat['long_vel'], label='estimated long_vel')
+        plt.legend()
+        plt.show()
+
+        # fig = plt.figure(2)
+        # plt.subplot(2, 1, 1)
+        # plt.plot(range(len(vals['x'])), mse_x, label='MSE of x')
+        # plt.subplot(2, 1, 2)
+        # plt.plot(range(len(vals['x'])), mse_y, label='MSE of y')
+        # plt.legend()
+        # plt.show()
+
+        
 
     elif DATASET == "straightaway":
         x_centroid_2d = []
@@ -118,9 +161,6 @@ def main():
             y_centroid_2d.append((vals[i]['bottom_left_front'][1] + vals[i]['bottom_right_back'][1]) / 2)
     else:
         pass
-
-    # print(vals)
-    
 
 
     # for idx, box3d in enumerate(bb_vals):

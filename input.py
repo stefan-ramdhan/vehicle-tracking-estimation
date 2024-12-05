@@ -253,7 +253,7 @@ def obtain_trajectory_r0s4(dataset_path, label_id):
     df = pd.DataFrame(data_list)
     return df
 
-def compute_ground_truth(vals):
+def compute_derivatives(vals):
 
     x = vals['x']
     y = vals['y']
@@ -281,4 +281,28 @@ def compute_ground_truth(vals):
     vals['yaw_rate'] = yaw_rate
 
 
-    return None
+    return vals
+
+
+def add_noise(cuboid_val, stddev):
+    noise = np.random.normal(0.0, stddev, len(cuboid_val))
+    return [val + n for val, n in zip(cuboid_val, noise)]
+
+def add_noise_to_gt(vals, stddev):
+
+    noisy_vals = vals.copy()
+    noisy_vals["cuboid_val"] = noisy_vals["cuboid_val"].apply(lambda x: add_noise(x, stddev))
+
+    # print(vals['cuboid_val'][0])
+    # print(noisy_vals['cuboid_val'][0])
+
+    return noisy_vals
+
+def simulate_measurements(vals, sigma):
+    noisy_vals = add_noise_to_gt(vals, sigma)
+    noisy_vals['x'] = noisy_vals["cuboid_val"].apply(lambda x: x[0]).to_numpy()
+    noisy_vals['y'] = noisy_vals["cuboid_val"].apply(lambda x: x[1]).to_numpy()
+    noisy_vals['yaw'] = noisy_vals["cuboid_val"].apply(lambda x: x[5]).to_numpy()
+    
+    # Compute lat_vel, long_vel, lat_accel, long_accel, yaw_rate for measurements
+    return compute_derivatives(noisy_vals)

@@ -6,11 +6,11 @@ def init_4d_kf(linear_kf_4d):
 
     del_t = 0.1
     init_P = 1000 # high uncertainty in our initial state values 
-    measurement_sigma = 0.02 # based on specification (I add noise to GT, so this is from Gaussian sigma)
+    measurement_sigma = 2e-2 # based on specification (I add noise to GT, so this is from Gaussian sigma)
     try:
-        process_sigma = linear_kf_4d.process_sigma**2
+        process_sigma = linear_kf_4d.process_sigma
     except:
-        process_sigma = 1e7
+        process_sigma = 2e-4
     init_Q = 1e-2 # How much uncertainty we have in state transition (low -> follow state transition more than measurements)
 
     linear_kf_4d.x = np.array(
@@ -43,18 +43,18 @@ def init_4d_kf(linear_kf_4d):
                     ])
 
 
-    # linear_kf_4d.Q = process_sigma * np.array( # Process Noise Covariance Q
-    #                 [[del_t**4/4, 0, del_t**3/2, 0],
-    #                 [0, del_t**4/4, 0, del_t**3/2],
-    #                 [del_t**3/2, 0, del_t**2, 0],
-    #                 [0, del_t**3/2, 0, del_t**2]]
-    #                 )
-    linear_kf_4d.Q = 1 * np.array([ # Process Noise Covariance Q
-                    [init_Q, 0, 0, 0],
-                    [0, init_Q, 0, 0],
-                    [0, 0, init_Q, 0],
-                    [0, 0, 0, init_Q]
-                    ])
+    linear_kf_4d.Q = process_sigma**2 * np.array( # Process Noise Covariance Q
+                    [[del_t**4/4, 0, del_t**3/2, 0],
+                    [0, del_t**4/4, 0, del_t**3/2],
+                    [del_t**3/2, 0, del_t**2, 0],
+                    [0, del_t**3/2, 0, del_t**2]]
+                    )
+    # linear_kf_4d.Q = 1 * np.array([ # Process Noise Covariance Q
+    #                 [init_Q, 0, 0, 0],
+    #                 [0, init_Q, 0, 0],
+    #                 [0, 0, init_Q, 0],
+    #                 [0, 0, 0, init_Q]
+    #                 ])
     # linear_kf_4d.Q = 0.5 * np.array([ # Process Noise Covariance Q
     #                 [del_t**4/4, 0, 0, 0],
     #                 [0, del_t**4/4, 0, 0],
@@ -87,6 +87,7 @@ def execute_kf(measurements, kf_type="4d_linear"):
             old_ts = ts
             ts, z = read_measurements(measurements, i)
             del_t = ts - old_ts
+            
             if i > 0:
                 linear_kf_4d.updateFQ(del_t)
             linear_kf_4d.predict()
@@ -113,7 +114,7 @@ class LinearKF:
     def __init__(self, dim_x, dim_z):
         self.dim_x = dim_x
         self.dim_z = dim_z
-        self.process_sigma = 1e7
+        self.process_sigma = 2e-4
         self.x = np.zeros((dim_x, 1))
         self.F = np.zeros((dim_x, dim_x))
         self.H = np.zeros((dim_z, dim_x))
@@ -157,9 +158,9 @@ class LinearKF:
                 [0, 0, 0, 1]]
                 )
         
-        # self.Q = self.process_sigma**2 * np.array( # Process Noise Covariance Q
-        #         [[del_t**4/4, 0, del_t**3/2, 0],
-        #         [0, del_t**4/4, 0, del_t**3/2],
-        #         [del_t**3/2, 0, del_t**2, 0],
-        #         [0, del_t**3/2, 0, del_t**2]]
-        #         )
+        self.Q = self.process_sigma**2 * np.array( # Process Noise Covariance Q
+                [[del_t**4/4, 0, del_t**3/2, 0],
+                [0, del_t**4/4, 0, del_t**3/2],
+                [del_t**3/2, 0, del_t**2, 0],
+                [0, del_t**3/2, 0, del_t**2]]
+                )

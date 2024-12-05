@@ -63,7 +63,7 @@ def main():
         # Select which part of the turning sequence we want
         scenario = "straight1" # straight1, turning, straight2, all
 
-        sec1_cutoff = 46 # point at which vehicle goes from straight to turning (46 is good)
+        sec1_cutoff = 40 # point at which vehicle goes from straight to turning (46 is good)
         sec2_cutoff = 85 # vehicle goes from turning to straight        
 
         if scenario == "straight1":
@@ -121,6 +121,7 @@ def main():
         x_hat = execute_kf(noisy_vals, "my_4d_linear")
 
         '''Plot ground truth & measurements (trajectory) '''
+        print(len(vals['x']), len(x_hat['x']))
         plt.figure(1)
         plt.scatter(noisy_vals['x'], noisy_vals['y'], label='measured trajectory')
         plt.scatter(vals['x'], vals['y'], label="ground truth")

@@ -61,7 +61,7 @@ def main():
     elif DATASET == "r2_s1":
 
         # Select which part of the turning sequence we want
-        scenario = "all" # straight1, turning, straight2, all
+        scenario = "straight1" # straight1, turning, straight2, all
 
         sec1_cutoff = 46 # point at which vehicle goes from straight to turning (46 is good)
         sec2_cutoff = 85 # vehicle goes from turning to straight        
@@ -105,6 +105,7 @@ def main():
 
         # Compute ground truth
         vals = compute_derivatives(vals)
+        # print(vals)
 
         # Add noise to ground truth, to simulate measurements, and compute measured lat_vel, long_vel, etc.
         sigma = 0.02
@@ -121,7 +122,7 @@ def main():
 
         '''Plot ground truth & measurements (trajectory) '''
         plt.figure(1)
-        # plt.plot(noisy_vals['x'], noisy_vals['y'], label='measured trajectory')
+        plt.scatter(noisy_vals['x'], noisy_vals['y'], label='measured trajectory')
         plt.scatter(vals['x'], vals['y'], label="ground truth")
         plt.scatter(x_hat['x'], x_hat['y'], label='estimated trajectory')
         plt.ylim([-65, 10])
@@ -136,10 +137,12 @@ def main():
         plt.subplot(2,1,1)
         plt.plot(range(len(vals['lat_vel'])), vals['lat_vel'], label='GT lat_vel')
         plt.plot(range(len(x_hat['lat_vel'])), x_hat['lat_vel'], label='estimated lat_vel')
+        # plt.plot(range(len(noisy_vals['lat_vel'])), noisy_vals['lat_vel'], label='measured lat_vel')
         plt.legend()
         plt.subplot(2,1,2)
         plt.plot(range(len(vals['long_vel'])), vals['long_vel'], label='GT long_vel')
         plt.plot(range(len(x_hat['long_vel'])), x_hat['long_vel'], label='estimated long_vel')
+        # plt.plot(range(len(noisy_vals['long_vel'])), noisy_vals['long_vel'], label='measured long_vel')
         plt.legend()
         plt.show()
 

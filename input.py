@@ -206,53 +206,6 @@ def obtain_trajectory_r2s1(dataset_path, object_id):
     return df
 
 
-def obtain_trajectory_r0s4(dataset_path, label_id):
-    data_list = []
-
-    # Iterate through each JSON file in the directory
-    for filename in sorted(os.listdir(dataset_path)):
-        if filename.endswith(".json"):
-            filepath = os.path.join(dataset_path, filename)
-            try:
-                # Load JSON file
-                with open(filepath, "r") as file:
-                    data = json.load(file)
-
-                # Extract timestamps
-                timestamp_secs = data.get("timestamp_secs", 0)
-                timestamp_nsecs = data.get("timestamp_nsecs", 0)
-                timestamp = timestamp_secs + timestamp_nsecs * 1e-9
-
-                # Search for the specified label ID
-                labels = data.get("labels", [])
-                for label in labels:
-                    if label.get("id") == label_id:
-                        # Extract box3d data
-                        box3d = label.get("box3d", {})
-                        dimension = box3d.get("dimension", {})
-                        location = box3d.get("location", {})
-                        orientation = box3d.get("orientation", {})
-
-                        # Append the extracted data
-                        data_list.append({
-                            "timestamp": timestamp,
-                            "dimension_length": dimension.get("length"),
-                            "dimension_width": dimension.get("width"),
-                            "dimension_height": dimension.get("height"),
-                            "location_x": location.get("x"),
-                            "location_y": location.get("y"),
-                            "location_z": location.get("z"),
-                            "orientation_yaw": orientation.get("rotationYaw"),
-                            "orientation_pitch": orientation.get("rotationPitch"),
-                            "orientation_roll": orientation.get("rotationRoll")
-                        })
-            except Exception as e:
-                print(f"Error processing file {filename}: {e}")
-
-    # Convert to a DataFrame
-    df = pd.DataFrame(data_list)
-    return df
-
 def compute_derivatives(vals):
 
     x = vals['x']
@@ -280,18 +233,36 @@ def compute_derivatives(vals):
     vals['long_accel'] = long_accel
     vals['yaw_rate'] = yaw_rate
 
-
     return vals
 
 
-def add_noise(cuboid_val, stddev):
+def add_noise_arr(cuboid_val, stddev):
     noise = np.random.normal(0.0, stddev, len(cuboid_val))
     return [val + n for val, n in zip(cuboid_val, noise)]
+
+def add_noise(val, stddev):
+    noise = np.random.normal(0.0, stddev)
+    return val + noise
 
 def add_noise_to_gt(vals, stddev):
 
     noisy_vals = vals.copy()
-    noisy_vals["cuboid_val"] = noisy_vals["cuboid_val"].apply(lambda x: add_noise(x, stddev))
+    noisy_vals["cuboid_val"] = noisy_vals["cuboid_val"].apply(lambda x: add_noise_arr(x, stddev))
+
+    # Add noise to BB corners.
+    noisy_vals["x1"] = noisy_vals["x1"].apply(lambda x: add_noise(x, stddev/2))
+    noisy_vals["x2"] = noisy_vals["x2"].apply(lambda x: add_noise(x, stddev/2))
+    noisy_vals["y1"] = noisy_vals["y1"].apply(lambda x: add_noise(x, stddev/2))
+    noisy_vals["y2"] = noisy_vals["y2"].apply(lambda x: add_noise(x, stddev/2))
+
+    # Compute yaw based on new BB corners
+    # noisy_vals['yaw'] = -1 * np.arctan((noisy_vals['x2'] - noisy_vals['x1']) / (noisy_vals['y2'] - noisy_vals['y1']))
+
+    # Above computation is not generalizable. Plot these out to ensure the yaw computatino is correct.
+    noisy_vals['yaw'] = np.arctan2(noisy_vals['y2'] - noisy_vals['y1'], noisy_vals['x2'] - noisy_vals['x1'])
+    noisy_vals['yaw'] = -((np.pi / 2) - noisy_vals['yaw']) #apply a correction
+
+    noisy_vals = noisy_vals.drop(columns=['length', 'width', 'x1', 'x2', 'y1', 'y2'])
 
     # print(vals['cuboid_val'][0])
     # print(noisy_vals['cuboid_val'][0])
@@ -302,7 +273,28 @@ def simulate_measurements(vals, sigma):
     noisy_vals = add_noise_to_gt(vals, sigma)
     noisy_vals['x'] = noisy_vals["cuboid_val"].apply(lambda x: x[0]).to_numpy()
     noisy_vals['y'] = noisy_vals["cuboid_val"].apply(lambda x: x[1]).to_numpy()
-    noisy_vals['yaw'] = noisy_vals["cuboid_val"].apply(lambda x: x[5]).to_numpy()
+    # noisy_vals['yaw'] = noisy_vals["cuboid_val"].apply(lambda x: x[5]).to_numpy() # Don't add noise to yaw.
     
     # Compute lat_vel, long_vel, lat_accel, long_accel, yaw_rate for measurements
     return compute_derivatives(noisy_vals)
+
+
+def compute_bb_corners(vals):
+
+    # Compute Top Right Corner
+    vals['x1'] = vals['x'] + vals['length']/2 * np.cos(vals['yaw']) + vals['width']/2 * np.sin(vals['yaw'])
+    vals['y1'] = vals['y'] + vals['length']/2 * np.sin(vals['yaw']) - vals['width']/2 * np.cos(vals['yaw'])
+
+    # Compute Top Left Corner
+    vals['x2'] = vals['x'] + vals['length']/2 * np.cos(vals['yaw']) - vals['width']/2 * np.sin(vals['yaw'])
+    vals['y2'] = vals['y'] + vals['length']/2 * np.sin(vals['yaw']) + vals['width']/2 * np.cos(vals['yaw'])
+
+    # vals = vals.drop(columns=['length', 'width', 'x1', 'x2', 'y1', 'y2'])
+    return vals
+    
+
+def normalize_yaw(vals):
+    vals['yaw'] = np.pi * vals['yaw']
+
+
+    return vals

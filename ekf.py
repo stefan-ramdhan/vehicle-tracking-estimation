@@ -152,25 +152,12 @@ def measurement_function(x):
 
     return np.array([x[0], x[1], x[3]])
 
-def normalize_angle(angle):
-    """
-    Normalize angle to be within [-pi, pi].
-    """
-    while angle > np.pi:
-        angle -= 2 * np.pi
-    while angle < -np.pi:
-        angle += 2 * np.pi
-    return angle
-
 
 def predict(ekf, dt):
 
     update_Q(ekf, dt)
     ekf.x = state_transition(ekf.x, dt)
     ekf.F = state_transition_jacobian(ekf.x, dt)
-
-    # ekf.x[3] = normalize_angle(ekf.x[3])
-
     ekf.P = np.matmul(np.matmul(ekf.F, ekf.P), ekf.F.T) + ekf.Q
 
 def update(ekf, z):
@@ -179,9 +166,7 @@ def update(ekf, z):
     z_pred = measurement_function(ekf.x).reshape(3,1)
     # innovation
     y = z - z_pred
-    # y[2] = normalize_angle(y[2])
     
-
     # innovation covariance
     S = np.matmul(np.matmul(ekf.H, ekf.P), ekf.H.T) + ekf.R
 
@@ -190,7 +175,6 @@ def update(ekf, z):
 
     # State update
     ekf.x = ekf.x + np.matmul(K, y)
-    # ekf.x[3] = normalize_angle(ekf.x[3])  # Normalize yaw
 
     # Covariance Update
     I = np.eye(ekf.dim_x)
@@ -223,10 +207,11 @@ def execute_ekf(measurements):
     ])  # [x, y, v, theta (rad), omega (rad/s)]
     init_P = 1e8
     sigma_a = 2e-2  # Acceleration noise standard deviation
-    sigma_omega = np.deg2rad(5)  # Angular acceleration noise standard deviation
+    sigma_omega = np.deg2rad(30)  # Angular acceleration noise standard deviation
     sigma_x = 2e-2  # Measurement noise standard deviation for x
     sigma_y = 2e-2  # Measurement noise standard deviation for y
-    sigma_theta = np.deg2rad(4)  # Measurement noise standard deviation for theta
+    sigma_theta = np.deg2rad(10)  # Measurement noise standard deviation for theta
+    # sigma_theta = 0.01
     dt = 0.1  # Time step in seconds
 
     ekf = init_ekf(init_x, init_P, sigma_a, sigma_omega, sigma_x, sigma_y, sigma_theta, dt)

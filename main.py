@@ -136,8 +136,8 @@ def main():
         # plt.show()
 
         # Call Kalman Filter
-        x_hat, P, y, S = execute_ekf(noisy_vals)
-        # x_hat, P, y, S = execute_kf(noisy_vals)
+        # x_hat, P, y, S = execute_ekf(noisy_vals)
+        x_hat, P, y, S = execute_kf(noisy_vals)
         nees = compute_nees(x_hat, vals, P)
         nis = compute_nis(y, S)
         
@@ -145,7 +145,7 @@ def main():
 
         '''Plot ground truth & measurements (trajectory) '''
         # print(len(vals['x']), len(x_hat['x']))
-        plt.figure(2)
+        plt.figure(1)
         plt.plot(noisy_vals['x'], noisy_vals['y'], label='Measured Trajectory')
         plt.plot(vals['x'], vals['y'], label="GT Trajectory")
         plt.plot(x_hat['x'], x_hat['y'], label='estimated trajectory')
@@ -157,35 +157,35 @@ def main():
         plt.ylabel("y position (m)")
         # plt.show()
 
-        plt.figure(3)
-        plt.plot(range(len(vals['vel'])), vals['vel'], label='ground truth velocity')
-        plt.plot(range(len(noisy_vals['vel'])), noisy_vals['vel'], label='measured velocity')
-        plt.plot(range(len(x_hat['v'])), x_hat['v'], label='estimated velocity')
-        plt.legend()
-        plt.title("Velocity (Ground Truth vs. Measured vs. Estimataed)")
-        plt.xlabel("Timestep (s)")
-        plt.ylabel("Velocity (m/s)")
+        # plt.figure(2)
+        # plt.plot(range(len(vals['vel'])), vals['vel'], label='ground truth velocity')
+        # plt.plot(range(len(noisy_vals['vel'])), noisy_vals['vel'], label='measured velocity')
+        # plt.plot(range(len(x_hat['v'])), x_hat['v'], label='estimated velocity')
+        # plt.legend()
+        # plt.title("Velocity (Ground Truth vs. Measured vs. Estimataed)")
+        # plt.xlabel("Timestep (s)")
+        # plt.ylabel("Velocity (m/s)")
         # plt.show()
 
         # Plot GT yaw, measured yaw, estimated yaw
-        plt.figure(1)
-        plt.subplot(2,1,1)
-        plt.plot(range(len(vals['yaw'])), vals['yaw'], label='gt yaw')
-        plt.plot(range(len(noisy_vals['yaw'])), noisy_vals['yaw'], label='yaw')
-        plt.plot(range(len(x_hat['theta'])), x_hat['theta'], label='estimated yaw')
-        plt.title("Yaw (Ground Truth vs. Measured vs. Estimated)")
-        plt.xlabel("Timestep (s)")
-        plt.ylabel("Yaw (rad)")
-        plt.legend()
-        plt.subplot(2,1,2)
-        plt.plot(range(len(vals['yaw_rate'])), vals['yaw_rate'], label='gt yaw rate')
-        plt.plot(range(len(noisy_vals['yaw_rate'])), noisy_vals['yaw_rate'], label='yaw rate')
-        plt.plot(range(len(x_hat['omega'])), x_hat['omega'], label='estimated yaw rate')
-        plt.title("Yaw Rate (Ground Truth vs. Measured vs. Estimated)")
-        plt.xlabel("Timestep (s)")
-        plt.ylabel("Yaw (rad/s)")
-        plt.legend()
-        plt.show()
+        # plt.figure(3)
+        # plt.subplot(2,1,1)
+        # plt.plot(range(len(vals['yaw'])), vals['yaw'], label='gt yaw')
+        # plt.plot(range(len(noisy_vals['yaw'])), noisy_vals['yaw'], label='yaw')
+        # plt.plot(range(len(x_hat['theta'])), x_hat['theta'], label='estimated yaw')
+        # plt.title("Yaw (Ground Truth vs. Measured vs. Estimated)")
+        # plt.xlabel("Timestep (s)")
+        # plt.ylabel("Yaw (rad)")
+        # plt.legend()
+        # plt.subplot(2,1,2)
+        # plt.plot(range(len(vals['yaw_rate'])), vals['yaw_rate'], label='gt yaw rate')
+        # plt.plot(range(len(noisy_vals['yaw_rate'])), noisy_vals['yaw_rate'], label='yaw rate')
+        # plt.plot(range(len(x_hat['omega'])), x_hat['omega'], label='estimated yaw rate')
+        # plt.title("Yaw Rate (Ground Truth vs. Measured vs. Estimated)")
+        # plt.xlabel("Timestep (s)")
+        # plt.ylabel("Yaw (rad/s)")
+        # plt.legend()
+        # plt.show()
 
         # mse_x = compute_mse(vals['x'], x_hat['x'])
         # mse_y = compute_mse(vals['y'], x_hat['y'])
@@ -213,8 +213,8 @@ def main():
         # plt.show()
 
         # Compute confidence for NEES
-        lower_nees, upper_nees = compute_confidence_bounds(5) # 4 for linear, 5  for ekf
-        fig = plt.figure(3)
+        lower_nees, upper_nees = compute_confidence_bounds(4) # 4 for linear, 5  for ekf
+        fig = plt.figure(4)
         plt.plot(range(len(nees)), nees)
         plt.axhline(y = lower_nees, color = 'r', linestyle = '-') 
         plt.axhline(y = upper_nees, color = 'r', linestyle = '-') 
@@ -223,8 +223,8 @@ def main():
         plt.xlabel("")
 
         # Compute confidence for NIS
-        lower_nis, upper_nis = compute_confidence_bounds(3) # 2 for linear, 3 for ekf
-        fig = plt.figure(4)
+        lower_nis, upper_nis = compute_confidence_bounds(2) # 2 for linear, 3 for ekf
+        fig = plt.figure(5)
         plt.plot(range(len(nis)), nis)
         plt.axhline(y = lower_nis, color = 'r', linestyle = '-') 
         plt.axhline(y = upper_nis, color = 'r', linestyle = '-') 

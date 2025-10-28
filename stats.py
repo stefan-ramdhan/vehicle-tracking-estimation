@@ -23,8 +23,8 @@ def compute_confidence_bounds(dof, alpha=0.05):
 def compute_nees(x_hat, vals, P):
     
     nees = []
-    # columns_to_select = ['x', 'y', 'lat_vel', 'long_vel']
-    columns_to_select = ['x', 'y', 'vel', 'yaw', 'yaw_rate']
+    columns_to_select = ['x', 'y', 'lat_vel', 'long_vel']
+    # columns_to_select = ['x', 'y', 'vel', 'yaw', 'yaw_rate']
     x_real = vals[columns_to_select].to_numpy()
 
     xhat = x_hat.to_numpy()
